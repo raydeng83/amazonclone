@@ -8,11 +8,15 @@ var engine = require('ejs-mate');
 var session = require('express-session');
 var cookieParser = require('cookie-parser');
 var flash=require('express-flash');
+var MongoStore = require('connect-mongo/es5')(session);
+var passport = require('passport');
+
+var secret = require('./config/secret');
 var User = require('./models/user');
 
 var app = express();
 
-mongoose.connect('mongodb://root:abc123@ds055535.mongolab.com:55535/amazonclone-ldeng', function(err) {
+mongoose.connect(secret.database, function(err) {
   if(err) {console.log(err);}
   else {
     console.log('Connected to the database');
@@ -28,9 +32,13 @@ app.use(cookieParser());
 app.use(session({
   resave: true,
   saveUninitialized: true,
-  secret: "Le!@#$!@"
+  secret: secret.secretKey,
+  store: new MongoStore({url: secret.database, autoReconnect: true})
 }));
 app.use(flash());
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.engine('ejs', engine);
 app.set('view engine', 'ejs');
 
@@ -41,9 +49,7 @@ app.use(mainRoutes);
 app.use(userRoutes);
 
 
-
-
-app.listen(3300, function(err){
+app.listen(secret.port, function(err){
   if(err) throw err;
-  console.log('Server is running!');
+  console.log('Server is running at ' + secret.port);
 });
